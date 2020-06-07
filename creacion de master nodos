@@ -1,0 +1,85 @@
+Creación de las máquinas virtuales Centos 7
+
+Las máquinas virtuales fueron creadas con VMware con el sistema Operativo de Centos 7.
+
+-Se ingresa a las máquinas por ssh:
+ ssh root@ip
+
+-Se realiza desactivación de firewall:
+ sudo systemctl stop firewalld && sudo systemctl disable firewalld
+
+-Se deshabilita selinux:
+ vi /etc/selinux/config
+ -Se modifica la línea
+  SELINUX=disabled
+
+-Se realiza actualización del sistema:
+ sudo yum upgrade --assumeyes --tolerant
+
+-Comandos pare reposiorios:
+ sudo tee /etc/modules-load.d/overlay.conf <<-'EOF'
+ > overlay
+ > EOF
+
+-Se realiza instalación de paquetes para los repositorios:
+ yum install -y yum-utils device-mapper-persistent-data lvm2
+ yum-config-manager  --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+-Se realiza intalación de Docker:
+ yum install docker-ce
+
+-Se inicia Docker:
+ systemctl enable docker
+ systemctl start docker
+
+-Se realiza verificación de docker:
+ systemctl status docker
+
+-Se realiza sincronización de las máquinas virtuales:
+ sudo yum install chrony -y
+ systemctl enable chronyd && systemctl start chronyd
+ timedatectl set-ntp 1
+
+-Se ejecuta comando para no cambiar la versión de docker:
+ yum install yum-plugin-versionlock -y
+
+Creación de LLaves
+
+-Se realiza unión con los nodos. Se le darán Enter para que genere el archivo:
+ ssh-keygen
+
+-Comando para verificar las llaves nuevamente:
+ cd .ssh/
+ ls
+ cat nombrellave
+
+-Se envía las claves para cada nodo:
+ ssh-copy-id -i ~/.ssh/id_rsa.pub root@IP1
+ ssh-copy-id -i ~/.ssh/id_rsa.pub root@IP2
+ 
+Instalación de DC/OS
+
+-Se ejecuta comando para instalación de DCOS:
+ curl -O https://downloads.dcos.io/dcos/stable/dcos_generate_config.sh
+
+-Se crea carpeta para pasar un archivo de configuración para la IP, Carpeta genconf:
+ mkdir -p genconf
+
+-Sacar dato de ip:
+ ip -a
+ Tipo de IP: eno16777736
+
+-Se crea el archivo en sublime text para que dectecte la IP, archivo ip-detect:
+
+  set -o nounset -o errexit
+  export PATH=/usr/sbin:/usr/bin:$PATH
+  echo $(ip addr show eno16777736 | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+
+-Se envia de forma local el archivo creado
+ cd Escritorio/
+ scp ip-detect root@IP0:/root/genconf
+
+-Se descomprime el archivo para la instalación de DCOS:
+ sudo bash dcos_generate_config.sh --web
+
+-Ruta de nuestro servidor: http://IP/#/
